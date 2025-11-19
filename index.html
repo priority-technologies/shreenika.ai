@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Shreenika AI – Voice Agent Test</title>
+</head>
+
+<body>
+    <h1>Shreenika AI Test Agent</h1>
+
+    <textarea id="inputText" rows="4" cols="50" placeholder="Type a question..."></textarea><br><br>
+
+    <button onclick="sendRequest()">Send to AI</button>
+
+    <h3>Response:</h3>
+    <pre id="responseBox" style="white-space: pre-wrap;"></pre>
+
+    <script>
+        async function sendRequest() {
+            const text = document.getElementById("inputText").value;
+            if (!text.trim()) {
+                alert("Please enter a message");
+                return;
+            }
+
+            try {
+                const response = await fetch("/api/realtime", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        input: text,
+                        stream: false
+                    })
+                });
+
+                const data = await response.json();
+                console.log("AI Response:", data);
+
+                document.getElementById("responseBox").innerText =
+                    JSON.stringify(data, null, 2);
+
+            } catch (err) {
+                console.error("Error:", err);
+                alert("Error talking to backend. Check console.");
+            }
+        }
+    </script>
+</body>
+</html>
