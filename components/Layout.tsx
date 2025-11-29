@@ -42,7 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPath, navigate }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('voxai_user');
-    navigate('/login');
+    window.location.href = '/';
   };
 
   const navItems = [

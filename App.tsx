@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import Auth from './components/Auth';
@@ -13,10 +12,11 @@ import SuperAdmin from './components/SuperAdmin';
 import ProfileSettings from './components/ProfileSettings';
 import { Lead, CallLog, AgentConfig } from './types';
 import { INITIAL_LEADS, MOCK_CALL_LOGS } from './constants';
+import { AuthProvider } from './AuthContext.tsx';
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
+
   // Initialize state from localStorage or defaults
   const [agent, setAgent] = useState<AgentConfig>(() => {
     const saved = localStorage.getItem('voxai_agent');
@@ -47,8 +47,7 @@ const App: React.FC = () => {
       voiceId: 'Monika (en-IN)',
       characteristics: ['Friendly', 'Professional', 'Persuasive'],
       age: 28,
-      
-      // Role
+
       welcomeMessage: "Hello! This is Shreenika calling from the reception. How can I assist you today?",
       prompt: `## Objective
 You are a voice AI agent engaging in a human-like voice conversation with the user. You will respond based on your given instruction and the provided transcript and be as human-like as possible.
@@ -57,9 +56,9 @@ You are a voice AI agent engaging in a human-like voice conversation with the us
 Personality: Your name is Shreenika and you are a receptionist in an AI restaurant. Maintain a pleasant and friendly demeanor throughout all interactions. This approach helps in building a positive rapport with customers.
 
 Task: As a receptionist for a restaurant, your tasks include table reservation which involves asking customers their preferred date and time to visit restaurant and asking number of people who will come.`,
+
       knowledgeBase: [],
 
-      // Settings
       callingLimit: 60,
       maxCallDuration: 3600,
       silenceDetectionMs: 15,
@@ -76,7 +75,7 @@ Task: As a receptionist for a restaurant, your tasks include table reservation w
       voipSid: ''
     };
   });
-  
+
   const [leads, setLeads] = useState<Lead[]>(() => {
     const saved = localStorage.getItem('voxai_leads');
     return saved ? JSON.parse(saved) : INITIAL_LEADS;
@@ -99,23 +98,25 @@ Task: As a receptionist for a restaurant, your tasks include table reservation w
   const [route, setRoute] = useState<string>('/dashboard');
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      setRoute('/login');
-    } else if (isAuthenticated && route === '/login') {
-      // If just authenticated, check role to decide where to go
-      const userStr = localStorage.getItem('voxai_user');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.role === 'admin') {
-          setRoute('/admin');
-        } else {
-          setRoute('/dashboard');
-        }
-      } else {
-        setRoute('/dashboard');
-      }
+  if (!isAuthenticated) {
+    setRoute('/login');
+    return;
+  }
+
+  const userStr = localStorage.getItem('voxai_user');
+  if (!userStr) return;
+
+  const user = JSON.parse(userStr);
+
+  if (route === '/login') {
+    if (user.role === 'admin') {
+      setRoute('/admin');
+    } else {
+      setRoute('/dashboard');
     }
-  }, [isAuthenticated]);
+  }
+}, [isAuthenticated]);
+
 
   // Persist state changes
   useEffect(() => {
@@ -130,25 +131,26 @@ Task: As a receptionist for a restaurant, your tasks include table reservation w
     localStorage.setItem('voxai_logs', JSON.stringify(callLogs));
   }, [callLogs]);
 
-  const navigate = (path: string) => {
-    setRoute(path);
-  };
+  const navigate = (path: string) => setRoute(path);
+
+  
 
   const renderContent = () => {
     if (!isAuthenticated) {
       return <Auth setIsAuthenticated={setIsAuthenticated} navigate={navigate} />;
     }
 
-    const isAdminRoute = route === '/admin';
+    const userStr = localStorage.getItem('voxai_user');
+    const user = userStr ? JSON.parse(userStr) : null;
 
-    // Authenticated logic
-    // Check if onboarding is needed, BUT SKIP if user is accessing Admin panel
-    if (!isAdminRoute && !agent.voipProvider && route !== '/onboarding') {
-       return <Onboarding setAgent={setAgent} navigate={navigate} />;
+    // 🟢 Admin bypasses onboarding
+    if (user?.role !== "Admin" && !agent.voipProvider && route !== '/onboarding') {
+      return <Onboarding setAgent={setAgent} navigate={navigate} />;
     }
+    
 
     if (route === '/onboarding') {
-       return <Onboarding setAgent={setAgent} navigate={navigate} />;
+      return <Onboarding setAgent={setAgent} navigate={navigate} />;
     }
 
     const PageContent = () => {
@@ -173,9 +175,9 @@ Task: As a receptionist for a restaurant, your tasks include table reservation w
   };
 
   return (
-    <>
+    <AuthProvider>
       {renderContent()}
-    </>
+    </AuthProvider>
   );
 };
 
