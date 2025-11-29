@@ -1,36 +1,87 @@
 
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Bot, Mail, Lock, ArrowRight } from 'lucide-react';
-
+import { AuthContext } from '../AuthContext.tsx';
 interface AuthProps {
   setIsAuthenticated: (val: boolean) => void;
   navigate: (path: string) => void;
 }
 
-const Auth: React.FC<AuthProps> = ({ setIsAuthenticated, navigate }) => {
+const Auth: React.FC<AuthProps> = ({ navigate }) => {
+  const { login } = useContext(AuthContext);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      // Admin Logic
-      const isAdmin = email.toLowerCase() === 'admin@priority.com';
-      const userData = { 
-         email, 
-         name: email.split('@')[0],
-         role: isAdmin ? 'admin' : 'user'
-      };
-      
-      localStorage.setItem('voxai_user', JSON.stringify(userData));
-      setIsAuthenticated(true);
-      
-      if (isAdmin) {
-         navigate('/admin');
+    setLoading(true);
+    const API_BASE = import.meta.env.VITE_SERVER_URL;
+    console.log('API_BASE:', API_BASE);
+
+    try {
+      if (isLogin) {
+        // -----------------------
+        // 🔐 USER LOGIN API CALL
+        // -----------------------
+        const res = await fetch(`${API_BASE}api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+        console.log('Login response data:', data.user.role);
+        if (!res.ok) {
+          return alert(data.message || "Login failed");
+        }
+
+        // Use Context to save user + token
+        login(data.user, data.token);
+        console.log('User logged in:', data.user, data.role);
+
+        // Redirect based on role
+        if (data.user.role.toLowerCase() === "admin") {
+          console.log("🎯 Navigating to: /admin");
+          window.location.href = "/admin";
+        }else {
+          console.log("🎯 Navigating to: /onboarding");
+          window.location.href = "/onboarding";
+        }
+
       } else {
-         navigate('/onboarding');
+        // -----------------------
+        // 📝 USER REGISTER API CALL
+        // -----------------------
+        const body = {
+          username: email.split("@")[0],
+          email,
+          password,
+          role: "User"
+        };
+
+        const res = await fetch(`${API_BASE}api/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.message || "Registration failed");
+          return;
+        }
+
+        alert("Registration successful! Please login.");
+        setIsLogin(true); // Switch to login screen
       }
+    } catch (err) {
+      console.error(err);
+      alert("Network Error");
+    } finally {
+      setLoading(false);
     }
   };
 
