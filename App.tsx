@@ -110,9 +110,9 @@ Task: As a receptionist for a restaurant, your tasks include table reservation w
 
   if (route === '/login') {
     if (user.role === 'admin') {
-      setRoute('/admin');
+      setRoute('/');
     } else {
-      setRoute('/dashboard');
+      setRoute('/');
     }
   }
 }, [isAuthenticated]);
