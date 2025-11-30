@@ -9,7 +9,13 @@ const app = express();
 const PORT = process.env.PORT;
 
 app.use(cors({
-  origin: "http://localhost:8000",
+  origin: [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "https://shreenika-ai-drab.vercel.app",
+    "https://shreenika-ai.onrender.com",
+  ],
+  methods: "GET,POST,PUT,DELETE",
   credentials: true
 }));
 
